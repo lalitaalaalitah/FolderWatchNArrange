@@ -15,7 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from folder_watch_n_arrange import ArrangeEngine, __version__
+from folder_watch_n_arrange import ArrangeEngine, get_current_mounts, __version__
 
 
 class TestFolderWatchNArrange(unittest.TestCase):
@@ -34,12 +34,11 @@ class TestFolderWatchNArrange(unittest.TestCase):
 
     def test_version_string(self):
         self.assertTrue(isinstance(__version__, str))
-        self.assertEqual(__version__, "1.0.0")
+        self.assertEqual(__version__, "1.1.0")
 
     def test_copy_action_and_history_dedup(self):
         sample_file = self.src_dir / "PHOTO_001.JPG"
         sample_file.write_text("dummy photo content")
-        # Ensure file mtime is settled > 2 seconds ago
         past = time.time() - 5
         os.utime(sample_file, (past, past))
 
@@ -60,12 +59,10 @@ class TestFolderWatchNArrange(unittest.TestCase):
         processed = engine.run_cycle(rules, dry_run=False)
         self.assertEqual(processed, 1)
 
-        # Confirm file was copied
         dest_files = list((self.dest_dir / "Photos").rglob("*.JPG"))
         self.assertEqual(len(dest_files), 1)
         self.assertTrue(sample_file.exists())
 
-        # Second cycle should skip duplicate copy
         processed_again = engine.run_cycle(rules, dry_run=False)
         self.assertEqual(processed_again, 0)
 
@@ -121,6 +118,10 @@ class TestFolderWatchNArrange(unittest.TestCase):
         self.assertTrue(existing_dest.is_file())
         renamed_dest = self.dest_dir / "Notes" / "file_1.txt"
         self.assertTrue(renamed_dest.is_file())
+
+    def test_mount_detection(self):
+        mounts = get_current_mounts()
+        self.assertIsInstance(mounts, set)
 
 
 if __name__ == "__main__":

@@ -3,34 +3,40 @@
 [![Author](https://img.shields.io/badge/Author-lalitaalaalitah-brightgreen)](https://www.lalitaalaalitah.com)
 [![Website](https://img.shields.io/badge/Website-lalitaalaalitah.com-blue)](https://www.lalitaalaalitah.com)
 [![GitHub](https://img.shields.io/badge/GitHub-lalitaalaalitah-black)](https://github.com/lalitaalaalitah)
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange)](#)
+[![Version](https://img.shields.io/badge/Version-1.1.0-orange)](#)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](#)
 
-**FolderWatchNArrange** is a lightweight, universal directory watcher and auto-arranger for **macOS** and **Linux**. It automatically detects files from SD Cards, Cameras, Desktop, Downloads, or any specified folder and copies or moves them according to user-defined routing rules (with dynamic date/extension/name templates and duplicate avoidance).
+**FolderWatchNArrange** is a lightweight, universal directory watcher and auto-arranger for **macOS** and **Linux**. It automatically detects storage mount events (SD Cards, Cameras, Phones, Voice Recorders, external HDDs) or local directories (Desktop, Downloads) and copies or moves files into organized date- and type-structured folders.
 
 ---
 
 ## Key Features
 
-- **Universal macOS & Linux Support**: Seamlessly detects removable volumes (`/Volumes/*` on macOS; `/media/*` or `/run/media/*` on Linux) and local directories (`~/Desktop`, `~/Downloads`).
-- **Zero Heavy Dependencies**: Built on Python standard library (`pathlib`, `shutil`, `json`, `time`, `glob`) — runs anywhere with `uv` or Python 3.10+.
-- **File Stability & Incomplete Write Guard**: Avoids moving or corrupting partially written files or active camera imports via settling window verification.
-- **Dynamic Destination Templating**: Route files using `{year}`, `{month}`, `{day}`, `{hour}`, `{minute}`, `{date}`, `{ext}`, `{stem}`, and `{name}` tokens.
-- **Duplicate Prevention & History Tracking**: Automatically remembers copied files in `~/.config/folder_watch_n_arrange/history.json` to avoid redundant transfers.
-- **Conflict Resolution**: Configurable conflict handling (`rename`, `skip`, or `overwrite`).
-- **Dry-Run Preview**: Preview rule actions safely before applying disk changes.
+- **Storage Mount Auto-Kickoff**: Automatically kicks off processing whenever an SD Card, Camera, Phone, Voice Recorder (Zoom, Tascam, Sony), or USB HDD is mounted (`/Volumes` on macOS; `/media` or `/run/media` on Linux).
+- **Nix Flake & Home Manager Ready**: Fully nixified with cross-platform flake support (`aarch64-darwin`, `x86_64-darwin`, `aarch64-linux`, `x86_64-linux`) and a ready-to-use Home Manager module.
+- **Native OS Triggers**: One-command installation of macOS `LaunchAgent` (`WatchPaths = ["/Volumes"]`) or Linux `systemd.path` unit to run on mount with zero background idle resource consumption.
+- **Zero Heavy Dependencies**: 100% Python standard library (`pathlib`, `shutil`, `json`, `glob`, `os`).
+- **Incomplete Write & Settle Protection**: Automatically verifies file stability before processing to ensure active camera imports or card copies are not moved prematurely.
+- **Dynamic Routing & Deduplication**: Template target folders with `{year}`, `{month}`, `{day}`, `{date}`, `{stem}`, `{ext}` and track copied files to prevent duplicate copies.
 
 ---
 
-## Installation
+## Installation & Execution
 
-Using [`uv`](https://github.com/astral-sh/uv):
+### With Nix Flakes
 
+Run directly without installing:
 ```bash
-uv pip install -e .
+nix run github:lalitaalaalitah/FolderWatchNArrange -- --help
 ```
 
-Or run directly without installation:
+Or build locally:
+```bash
+nix build
+./result/bin/folder-watch-n-arrange --version
+```
+
+### With `uv` or Python 3.10+
 
 ```bash
 uv run folder_watch_n_arrange.py --help
@@ -40,22 +46,29 @@ uv run folder_watch_n_arrange.py --help
 
 ## Quick Usage
 
-### 1. View or Initialize Default Rules
+### 1. Auto-Kick on Mount
+To listen for new SD cards, HDDs, phones, and audio recorders in the foreground:
 ```bash
-uv run folder_watch_n_arrange.py rules --init
+# Nix
+nix run . -- watch-mounts
+
+# uv
+uv run folder_watch_n_arrange.py watch-mounts
 ```
 
-### 2. Single Scan Pass (Preview with Dry-Run)
+### 2. Install Native OS Mount Trigger (Runs in background on mount)
+```bash
+# macOS installs ~/Library/LaunchAgents/com.lalitaalaalitah.folderwatchnarrange.plist
+# Linux installs ~/.config/systemd/user/folderwatchnarrange-mount.path
+uv run folder_watch_n_arrange.py install-triggers
+```
+
+### 3. Dry-Run Scan Pass
 ```bash
 uv run folder_watch_n_arrange.py scan --dry-run
 ```
 
-### 3. Continuous Watch Mode
-```bash
-uv run folder_watch_n_arrange.py watch --interval 5.0
-```
-
-For comprehensive configuration guides, rule schemas, and daemon/service setups, see [HOW_TO_USE.md](HOW_TO_USE.md).
+For full details, rule schema, and Home Manager configuration, see [HOW_TO_USE.md](HOW_TO_USE.md).
 
 ---
 
@@ -64,4 +77,4 @@ For comprehensive configuration guides, rule schemas, and daemon/service setups,
 - **Author**: lalitaalaalitah
 - **Website**: [https://www.lalitaalaalitah.com](https://www.lalitaalaalitah.com)
 - **GitHub**: [https://github.com/lalitaalaalitah](https://github.com/lalitaalaalitah)
-- **Version**: `1.0.0`
+- **Version**: `1.1.0`

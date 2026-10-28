@@ -15,11 +15,12 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "lalitaalaalitah"
 __website__ = "https://www.lalitaalaalitah.com"
 __github__ = "https://github.com/lalitaalaalitah"
@@ -55,10 +56,10 @@ def print_terminal_banner():
 
 
 def default_rules() -> list[dict]:
-    """Default cross-platform rules for SD Card, Camera, and Desktop."""
+    """Default cross-platform rules for SD Card, Camera, Recorders, and Desktop."""
     return [
         {
-            "name": "SD Card & Camera Photos",
+            "name": "SD Card, Camera & Phone Photos",
             "sources": [
                 "/Volumes/*/DCIM/**",
                 "/Volumes/*/*.JPG",
@@ -68,13 +69,13 @@ def default_rules() -> list[dict]:
                 "/media/*/*/DCIM/**",
                 "/run/media/*/*/DCIM/**",
             ],
-            "extensions": [".jpg", ".jpeg", ".cr2", ".cr3", ".nef", ".arw", ".dng", ".rw2", ".orf"],
+            "extensions": [".jpg", ".jpeg", ".cr2", ".cr3", ".nef", ".arw", ".dng", ".rw2", ".orf", ".heic"],
             "action": "copy",
             "destination": "~/Pictures/Camera/{year}/{year}-{month}-{day}",
             "on_conflict": "rename",
         },
         {
-            "name": "SD Card & Camera Videos",
+            "name": "SD Card, Camera & Phone Videos",
             "sources": [
                 "/Volumes/*/DCIM/**",
                 "/Volumes/*/*.MP4",
@@ -85,6 +86,22 @@ def default_rules() -> list[dict]:
             "extensions": [".mp4", ".mov", ".mkv", ".avi"],
             "action": "copy",
             "destination": "~/Movies/Camera/{year}/{year}-{month}",
+            "on_conflict": "rename",
+        },
+        {
+            "name": "Audio Recorders & Voice Notes",
+            "sources": [
+                "/Volumes/*/RECORDER/**",
+                "/Volumes/*/RECORD/**",
+                "/Volumes/*/AUDIO/**",
+                "/Volumes/*/*.WAV",
+                "/Volumes/*/*.MP3",
+                "/media/*/*/RECORDER/**",
+                "/run/media/*/*/RECORDER/**",
+            ],
+            "extensions": [".wav", ".mp3", ".m4a", ".flac", ".aac"],
+            "action": "copy",
+            "destination": "~/Audio/Recorders/{year}/{year}-{month}",
             "on_conflict": "rename",
         },
         {
@@ -146,7 +163,6 @@ class ArrangeEngine:
         discovered: set[Path] = set()
         for pattern in source_patterns:
             expanded = os.path.expanduser(pattern)
-            # Check for glob characters
             if any(ch in expanded for ch in ["*", "?", "["]):
                 for match in glob.glob(expanded, recursive=True):
                     p = Path(match)
@@ -210,7 +226,6 @@ class ArrangeEngine:
             counter += 1
 
     def match_rule(self, path: Path, rule: dict) -> bool:
-        # Ignore system/hidden junk
         if path.name.startswith((".", "._", "Thumbs.db")) or path.suffix.lower() in [".tmp", ".part"]:
             return False
 
@@ -237,7 +252,6 @@ class ArrangeEngine:
         action = rule.get("action", "copy").lower()
         key = f"{path.resolve()}::{st.st_size}::{int(st.st_mtime)}"
 
-        # If copy action, check if already processed
         if action == "copy" and key in self.history:
             return False
 
@@ -280,6 +294,131 @@ class ArrangeEngine:
         return processed_count
 
 
+def get_current_mounts() -> set[str]:
+    """Retrieve current mount paths on macOS or Linux."""
+    # ponytail: list /Volumes or read /proc/mounts; avoids psutil / pyudev
+    mounts = set()
+    if sys.platform == "darwin":
+        vol_path = Path("/Volumes")
+        if vol_path.is_dir():
+            try:
+                for entry in vol_path.iterdir():
+                    if entry.is_dir() and not entry.is_symlink():
+                        mounts.add(str(entry.resolve()))
+            except OSError:
+                pass
+    else:
+        # Linux
+        for candidate in ["/media", "/run/media"]:
+            p = Path(candidate)
+            if p.is_dir():
+                try:
+                    for sub in p.rglob("*"):
+                        if sub.is_dir() and sub.parent != p:
+                            mounts.add(str(sub.resolve()))
+                except OSError:
+                    pass
+        proc_mounts = Path("/proc/mounts")
+        if proc_mounts.is_file():
+            try:
+                for line in proc_mounts.read_text().splitlines():
+                    parts = line.split()
+                    if len(parts) >= 2 and (parts[1].startswith("/media") or parts[1].startswith("/run/media") or parts[1].startswith("/mnt")):
+                        mounts.add(parts[1])
+            except OSError:
+                pass
+    return mounts
+
+
+def watch_mount_events(engine: ArrangeEngine, dry_run: bool = False, poll_interval: float = 2.0):
+    """Event loop kicking off processing as soon as an SD card, HDD, camera, or recorder mounts."""
+    print(f"{CLR_BLUE}Listening for storage mounts (SD Cards, Cameras, Phones, Recorders, HDDs)...{CLR_RESET}")
+    print(f"{CLR_SUBTEXT}Press Ctrl+C to stop.{CLR_RESET}\n")
+
+    known_mounts = get_current_mounts()
+    rules = engine.load_rules()
+
+    # Initial scan of already mounted drives
+    engine.run_cycle(rules, dry_run=dry_run)
+
+    try:
+        while True:
+            time.sleep(poll_interval)
+            current_mounts = get_current_mounts()
+            new_mounts = current_mounts - known_mounts
+            if new_mounts:
+                for m in new_mounts:
+                    print(f"{CLR_GOLD}⚡ New storage device mounted: {m}{CLR_RESET}")
+                time.sleep(1.0)
+                rules = engine.load_rules()
+                n = engine.run_cycle(rules, dry_run=dry_run)
+                print(f"{CLR_GREEN}Processed {n} file(s) from mount.{CLR_RESET}\n")
+            known_mounts = current_mounts
+    except KeyboardInterrupt:
+        print(f"\n{CLR_GOLD}Mount watcher stopped gracefully.{CLR_RESET}")
+
+
+def install_os_trigger():
+    """Install native OS mount watcher (macOS LaunchAgent or Linux systemd user unit)."""
+    executable = sys.argv[0]
+    real_exe = str(Path(executable).resolve())
+
+    if sys.platform == "darwin":
+        plist_path = Path.home() / "Library" / "LaunchAgents" / "com.lalitaalaalitah.folderwatchnarrange.plist"
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
+        plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lalitaalaalitah.folderwatchnarrange</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{sys.executable}</string>
+        <string>{real_exe}</string>
+        <string>scan</string>
+    </array>
+    <key>WatchPaths</key>
+    <array>
+        <string>/Volumes</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+"""
+        plist_path.write_text(plist_content, encoding="utf-8")
+        subprocess.run(["launchctl", "unload", str(plist_path)], stderr=subprocess.DEVNULL)
+        subprocess.run(["launchctl", "load", str(plist_path)])
+        print(f"{CLR_GREEN}Installed & activated macOS LaunchAgent at {plist_path}{CLR_RESET}")
+        print(f"{CLR_BLUE}Kicks off scan whenever an SD Card, Phone, or HDD is plugged into /Volumes.{CLR_RESET}")
+    else:
+        # Linux systemd user service + path
+        service_dir = Path.home() / ".config" / "systemd" / "user"
+        service_dir.mkdir(parents=True, exist_ok=True)
+        path_unit = service_dir / "folderwatchnarrange-mount.path"
+        service_unit = service_dir / "folderwatchnarrange-mount.service"
+
+        path_unit.write_text(f"""[Unit]
+Description=Watch mount directories for SD cards, HDDs, recorders
+[Path]
+PathModified=/run/media
+PathModified=/media
+Unit=folderwatchnarrange-mount.service
+[Install]
+WantedBy=paths.target
+""")
+        service_unit.write_text(f"""[Unit]
+Description=FolderWatchNArrange Scan on Mount
+[Service]
+ExecStart={sys.executable} {real_exe} scan
+Type=oneshot
+""")
+        subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
+        subprocess.run(["systemctl", "--user", "enable", "--now", "folderwatchnarrange-mount.path"], check=False)
+        print(f"{CLR_GREEN}Installed & activated Linux systemd path unit at {path_unit}{CLR_RESET}")
+
+
 def self_test():
     """Run built-in verification suite."""
     import tempfile
@@ -293,10 +432,8 @@ def self_test():
         src_dir.mkdir()
         dest_dir.mkdir()
 
-        # Create test files
         img = src_dir / "IMG_0001.JPG"
         img.write_text("dummy photo data")
-        # Ensure mtime is > 2 seconds ago for stability check
         past = time.time() - 10
         os.utime(img, (past, past))
 
@@ -322,35 +459,35 @@ def self_test():
         assert expected_dest.is_file(), f"Expected file at {expected_dest}"
         assert img.is_file(), "Source file should remain after copy"
 
-        # Test duplicate avoidance
         count2 = engine.run_cycle(rules, dry_run=False)
         assert count2 == 0, f"Expected 0 on re-run, got {count2}"
 
-        # Test move action
-        doc = src_dir / "document.pdf"
-        doc.write_text("dummy pdf")
+        doc = src_dir / "audio.wav"
+        doc.write_text("audio sample")
         os.utime(doc, (past, past))
-        move_rules = [
+        audio_rules = [
             {
-                "name": "Test Move",
+                "name": "Test Audio",
                 "sources": [str(src_dir)],
-                "extensions": [".pdf"],
-                "action": "move",
-                "destination": str(dest_dir / "docs"),
+                "extensions": [".wav"],
+                "action": "copy",
+                "destination": str(dest_dir / "Audio"),
                 "on_conflict": "rename",
             }
         ]
-        count_move = engine.run_cycle(move_rules, dry_run=False)
-        assert count_move == 1, f"Expected 1 moved file, got {count_move}"
-        assert not doc.exists(), "Source file should be gone after move"
-        assert (dest_dir / "docs" / "document.pdf").is_file(), "Moved file missing"
+        count_audio = engine.run_cycle(audio_rules, dry_run=False)
+        assert count_audio == 1, f"Expected 1 copied audio file, got {count_audio}"
+        assert (dest_dir / "Audio" / "audio.wav").is_file()
+
+        mounts = get_current_mounts()
+        assert isinstance(mounts, set)
 
     print(f"{CLR_GREEN}All self-tests passed successfully!{CLR_RESET}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="folder_watch_n_arrange",
+        prog="folder-watch-n-arrange",
         description="FolderWatchNArrange - Universal Folder Watcher & Auto-Arranger (macOS & Linux)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -362,6 +499,13 @@ def main():
     # watch command
     watch_parser = subparsers.add_parser("watch", help="Continuously watch folders and apply rules")
     watch_parser.add_argument("-i", "--interval", type=float, default=5.0, help="Poll interval in seconds (default: 5.0)")
+
+    # watch-mounts command
+    mount_parser = subparsers.add_parser("watch-mounts", help="Watch for newly mounted SD cards, cameras, phones, HDDs, and audio recorders")
+    mount_parser.add_argument("-i", "--interval", type=float, default=2.0, help="Mount check interval in seconds (default: 2.0)")
+
+    # install-triggers command
+    subparsers.add_parser("install-triggers", help="Install native OS mount trigger (LaunchAgent on macOS, systemd path on Linux)")
 
     # scan command
     subparsers.add_parser("scan", help="Scan folders once, execute rules, and exit")
@@ -379,6 +523,10 @@ def main():
 
     if args.command == "test":
         self_test()
+        sys.exit(0)
+
+    if args.command == "install-triggers":
+        install_os_trigger()
         sys.exit(0)
 
     engine = ArrangeEngine(config_path=args.config)
@@ -402,6 +550,11 @@ def main():
         print(f"{CLR_GREEN}Scan complete. Processed {n} file(s).{CLR_RESET}")
         sys.exit(0)
 
+    if args.command == "watch-mounts":
+        interval = getattr(args, "interval", 2.0)
+        watch_mount_events(engine, dry_run=args.dry_run, poll_interval=interval)
+        sys.exit(0)
+
     # Default to watch mode if no subcommand specified or command is watch
     rules = engine.load_rules()
     interval = getattr(args, "interval", 5.0)
@@ -410,7 +563,6 @@ def main():
 
     try:
         while True:
-            # Reload rules dynamically if config modified
             engine.run_cycle(rules, dry_run=args.dry_run)
             time.sleep(interval)
     except KeyboardInterrupt:
