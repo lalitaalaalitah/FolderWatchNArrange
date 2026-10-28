@@ -1,0 +1,15 @@
+[project]
+name = "folder-watch-n-arrange"
+version = "1.0.0"
+description = "Universal Folder Watcher & Auto-Arranger for macOS and Linux"
+authors = [{ name = "lalitaalaalitah", email = "lalitaalaalitah@users.noreply.github.com" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+folder-watch-n-arrange = "folder_watch_n_arrange:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
