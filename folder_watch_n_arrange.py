@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __author__ = "lalitaalaalitah"
 __website__ = "https://www.lalitaalaalitah.com"
 __github__ = "https://github.com/lalitaalaalitah"
@@ -102,6 +102,18 @@ def default_rules() -> list[dict]:
             "extensions": [".wav", ".mp3", ".m4a", ".flac", ".aac"],
             "action": "copy",
             "destination": "~/Audio/Recorders/{year}/{year}-{month}",
+            "on_conflict": "rename",
+        },
+        {
+            "name": "Tascam Procapture X8",
+            "sources": [
+                "/Volumes/*/SOUND/**",
+                "/media/*/*/SOUND/**",
+                "/run/media/*/*/SOUND/**",
+            ],
+            "extensions": [".wav", ".bin", ".mp4", ".mp3"],
+            "action": "copy",
+            "destination": "/Volumes/Cablet_WD_2TB_20251206/Music/x8/SOUND/{year}/{year}.{month}/{year}{month}{day}",
             "on_conflict": "rename",
         },
         {

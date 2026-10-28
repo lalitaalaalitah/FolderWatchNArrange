@@ -115,6 +115,21 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
     "on_conflict": "rename"
   },
   {
+    "name": "Tascam Procapture X8",
+    "sources": [
+      "/Volumes/*/SOUND/**"
+    ],
+    "extensions": [
+      ".wav",
+      ".bin",
+      ".mp4",
+      ".mp3"
+    ],
+    "action": "copy",
+    "destination": "/Volumes/Cablet_WD_2TB_20251206/Music/x8/SOUND/{year}/{year}.{month}/{year}{month}{day}",
+    "on_conflict": "rename"
+  },
+  {
     "name": "Desktop Clean PDFs",
     "sources": ["~/Desktop"],
     "extensions": [".pdf"],
@@ -143,4 +158,4 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
 - **Author**: lalitaalaalitah
 - **Website**: https://www.lalitaalaalitah.com
 - **GitHub**: https://github.com/lalitaalaalitah
-- **Version**: 1.1.0
+- **Version**: 1.1.1

@@ -3,7 +3,7 @@
 [![Author](https://img.shields.io/badge/Author-lalitaalaalitah-brightgreen)](https://www.lalitaalaalitah.com)
 [![Website](https://img.shields.io/badge/Website-lalitaalaalitah.com-blue)](https://www.lalitaalaalitah.com)
 [![GitHub](https://img.shields.io/badge/GitHub-lalitaalaalitah-black)](https://github.com/lalitaalaalitah)
-[![Version](https://img.shields.io/badge/Version-1.1.0-orange)](#)
+[![Version](https://img.shields.io/badge/Version-1.1.1-orange)](#)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](#)
 
 **FolderWatchNArrange** is a lightweight, universal directory watcher and auto-arranger for **macOS** and **Linux**. It automatically detects storage mount events (SD Cards, Cameras, Phones, Voice Recorders, external HDDs) or local directories (Desktop, Downloads) and copies or moves files into organized date- and type-structured folders.
@@ -77,4 +77,4 @@ For full details, rule schema, and Home Manager configuration, see [HOW_TO_USE.m
 - **Author**: lalitaalaalitah
 - **Website**: [https://www.lalitaalaalitah.com](https://www.lalitaalaalitah.com)
 - **GitHub**: [https://github.com/lalitaalaalitah](https://github.com/lalitaalaalitah)
-- **Version**: `1.1.0`
+- **Version**: `1.1.1`

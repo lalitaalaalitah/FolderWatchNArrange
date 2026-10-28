@@ -8,6 +8,7 @@ GitHub: https://github.com/lalitaalaalitah
 ===============================================================================
 """
 
+import datetime
 import os
 import time
 import json
@@ -34,7 +35,7 @@ class TestFolderWatchNArrange(unittest.TestCase):
 
     def test_version_string(self):
         self.assertTrue(isinstance(__version__, str))
-        self.assertEqual(__version__, "1.1.0")
+        self.assertEqual(__version__, "1.1.1")
 
     def test_copy_action_and_history_dedup(self):
         sample_file = self.src_dir / "PHOTO_001.JPG"
@@ -118,6 +119,31 @@ class TestFolderWatchNArrange(unittest.TestCase):
         self.assertTrue(existing_dest.is_file())
         renamed_dest = self.dest_dir / "Notes" / "file_1.txt"
         self.assertTrue(renamed_dest.is_file())
+
+    def test_tascam_rule_destination(self):
+        sample_audio = self.src_dir / "261029_0001.WAV"
+        sample_audio.write_text("tascam raw audio")
+        past = time.time() - 5
+        os.utime(sample_audio, (past, past))
+
+        rules = [
+            {
+                "name": "Tascam Procapture X8",
+                "sources": [str(self.src_dir)],
+                "extensions": [".wav", ".bin", ".mp4", ".mp3"],
+                "action": "copy",
+                "destination": str(self.dest_dir / "{year}/{year}.{month}/{year}{month}{day}"),
+                "on_conflict": "rename",
+            }
+        ]
+
+        engine = ArrangeEngine(config_path=self.cfg_file, history_path=self.hist_file)
+        processed = engine.run_cycle(rules, dry_run=False)
+        self.assertEqual(processed, 1)
+
+        now = datetime.datetime.fromtimestamp(past)
+        expected_dir = self.dest_dir / f"{now.year:04d}" / f"{now.year:04d}.{now.month:02d}" / f"{now.year:04d}{now.month:02d}{now.day:02d}"
+        self.assertTrue((expected_dir / "261029_0001.WAV").is_file())
 
     def test_mount_detection(self):
         mounts = get_current_mounts()
