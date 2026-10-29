@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 __author__ = "lalitaalaalitah"
 __website__ = "https://www.lalitaalaalitah.com"
 __github__ = "https://github.com/lalitaalaalitah"
@@ -498,38 +498,48 @@ def self_test():
 
 
 def main():
+    root_parent = argparse.ArgumentParser(add_help=False)
+    root_parent.add_argument("--config", type=Path, default=DEFAULT_CONFIG_FILE, help="Path to rules.json")
+    root_parent.add_argument("--dry-run", action="store_true", default=False, help="Preview actions without copying or moving")
+
+    sub_parent = argparse.ArgumentParser(add_help=False)
+    sub_parent.add_argument("--config", type=Path, default=argparse.SUPPRESS, help="Path to rules.json")
+    sub_parent.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS, help="Preview actions without copying or moving")
+
     parser = argparse.ArgumentParser(
         prog="folder-watch-n-arrange",
         description="FolderWatchNArrange - Universal Folder Watcher & Auto-Arranger (macOS & Linux)",
+        parents=[root_parent],
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_FILE, help="Path to rules.json")
-    parser.add_argument("--dry-run", action="store_true", help="Preview actions without copying or moving")
 
     subparsers = parser.add_subparsers(dest="command")
 
     # watch command
-    watch_parser = subparsers.add_parser("watch", help="Continuously watch folders and apply rules")
+    watch_parser = subparsers.add_parser("watch", parents=[sub_parent], help="Continuously watch folders and apply rules")
     watch_parser.add_argument("-i", "--interval", type=float, default=5.0, help="Poll interval in seconds (default: 5.0)")
 
     # watch-mounts command
-    mount_parser = subparsers.add_parser("watch-mounts", help="Watch for newly mounted SD cards, cameras, phones, HDDs, and audio recorders")
+    mount_parser = subparsers.add_parser("watch-mounts", parents=[sub_parent], help="Watch for newly mounted SD cards, cameras, phones, HDDs, and audio recorders")
     mount_parser.add_argument("-i", "--interval", type=float, default=2.0, help="Mount check interval in seconds (default: 2.0)")
 
     # install-triggers command
-    subparsers.add_parser("install-triggers", help="Install native OS mount trigger (LaunchAgent on macOS, systemd path on Linux)")
+    subparsers.add_parser("install-triggers", parents=[sub_parent], help="Install native OS mount trigger (LaunchAgent on macOS, systemd path on Linux)")
 
     # scan command
-    subparsers.add_parser("scan", help="Scan folders once, execute rules, and exit")
+    subparsers.add_parser("scan", parents=[sub_parent], help="Scan folders once, execute rules, and exit")
 
     # rules command
-    rules_parser = subparsers.add_parser("rules", help="Manage and inspect rules")
+    rules_parser = subparsers.add_parser("rules", parents=[sub_parent], help="Manage and inspect rules")
     rules_parser.add_argument("--init", action="store_true", help="Initialize or overwrite with default rules")
 
     # test command
-    subparsers.add_parser("test", help="Execute built-in test suite")
+    subparsers.add_parser("test", parents=[sub_parent], help="Execute built-in test suite")
 
     args = parser.parse_args()
+
+    dry_run = bool(args.dry_run)
+    config_path = args.config
 
     print_terminal_banner()
 
@@ -541,23 +551,44 @@ def main():
         install_os_trigger()
         sys.exit(0)
 
-    engine = ArrangeEngine(config_path=args.config)
+    engine = ArrangeEngine(config_path=config_path)
 
     if args.command == "rules":
         if args.init:
-            args.config.parent.mkdir(parents=True, exist_ok=True)
-            with open(args.config, "w", encoding="utf-8") as f:
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(default_rules(), f, indent=2)
-            print(f"{CLR_GREEN}Initialized default rules at {args.config}{CLR_RESET}")
+            print(f"{CLR_GREEN}Initialized default rules at {config_path}{CLR_RESET}")
         else:
             rules = engine.load_rules()
-            print(f"{CLR_GOLD}Configured Rules ({args.config}):{CLR_RESET}")
+            print(f"{CLR_GOLD}Configured Rules ({config_path}):{CLR_RESET}")
             print(json.dumps(rules, indent=2))
         sys.exit(0)
 
-    if args.command == "scan":
+    if args.command == "scan" or (args.command is None and dry_run):
         rules = engine.load_rules()
-        print(f"{CLR_BLUE}Running single scan pass (dry_run={args.dry_run})...{CLR_RESET}")
+        print(f"{CLR_BLUE}Running single scan pass (dry_run={dry_run})...{CLR_RESET}")
+        n = engine.run_cycle(rules, dry_run=dry_run)
+        print(f"{CLR_GREEN}Scan complete. Processed {n} file(s).{CLR_RESET}")
+        sys.exit(0)
+
+    if args.command == "watch-mounts":
+        interval = getattr(args, "interval", 2.0)
+        watch_mount_events(engine, dry_run=dry_run, poll_interval=interval)
+        sys.exit(0)
+
+    # Default to watch mode if no subcommand specified or command is watch
+    rules = engine.load_rules()
+    interval = getattr(args, "interval", 5.0)
+    print(f"{CLR_BLUE}Starting watcher loop (interval: {interval}s, dry_run={dry_run})...{CLR_RESET}")
+    print(f"{CLR_SUBTEXT}Press Ctrl+C to stop.{CLR_RESET}\n")
+
+    try:
+        while True:
+            engine.run_cycle(rules, dry_run=dry_run)
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print(f"\n{CLR_GOLD}FolderWatchNArrange stopped gracefully.{CLR_RESET}")
         n = engine.run_cycle(rules, dry_run=args.dry_run)
         print(f"{CLR_GREEN}Scan complete. Processed {n} file(s).{CLR_RESET}")
         sys.exit(0)

@@ -3,7 +3,7 @@
 [![Author](https://img.shields.io/badge/Author-lalitaalaalitah-brightgreen)](https://www.lalitaalaalitah.com)
 [![Website](https://img.shields.io/badge/Website-lalitaalaalitah.com-blue)](https://www.lalitaalaalitah.com)
 [![GitHub](https://img.shields.io/badge/GitHub-lalitaalaalitah-black)](https://github.com/lalitaalaalitah)
-[![Version](https://img.shields.io/badge/Version-1.1.1-orange)](#)
+[![Version](https://img.shields.io/badge/Version-1.1.2-orange)](#)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](#)
 
 **FolderWatchNArrange** is a lightweight, universal directory watcher and auto-arranger for **macOS** and **Linux**. It automatically detects storage mount events (SD Cards, Cameras, Phones, Voice Recorders, external HDDs) or local directories (Desktop, Downloads) and copies or moves files into organized date- and type-structured folders.
@@ -63,8 +63,11 @@ uv run folder_watch_n_arrange.py watch-mounts
 uv run folder_watch_n_arrange.py install-triggers
 ```
 
-### 3. Dry-Run Scan Pass
+### 3. Dry-Run Scan Pass (Preview Changes)
 ```bash
+# Both root flag and subcommand flag are supported:
+uv run folder_watch_n_arrange.py --dry-run
+# or
 uv run folder_watch_n_arrange.py scan --dry-run
 ```
 
@@ -77,4 +80,4 @@ For full details, rule schema, and Home Manager configuration, see [HOW_TO_USE.m
 - **Author**: lalitaalaalitah
 - **Website**: [https://www.lalitaalaalitah.com](https://www.lalitaalaalitah.com)
 - **GitHub**: [https://github.com/lalitaalaalitah](https://github.com/lalitaalaalitah)
-- **Version**: `1.1.1`
+- **Version**: `1.1.2`

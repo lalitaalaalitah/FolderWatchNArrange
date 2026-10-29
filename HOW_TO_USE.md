@@ -54,6 +54,7 @@ Add FolderWatchNArrange to your Home Manager flake:
 | `folder-watch-n-arrange install-triggers` | Installs native OS mount trigger (LaunchAgent on macOS, systemd.path on Linux) |
 | `folder-watch-n-arrange watch` | Continuous polling watcher loop across specified directories |
 | `folder-watch-n-arrange scan` | Scan all sources once and process immediately |
+| `folder-watch-n-arrange --dry-run` | Preview actions without copying or moving any files (defaults to single scan pass) |
 | `folder-watch-n-arrange scan --dry-run` | Preview actions without copying or moving any files |
 | `folder-watch-n-arrange rules` | View currently loaded JSON rules |
 | `folder-watch-n-arrange rules --init` | Reinitialize or create default rules file |
@@ -158,4 +159,4 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
 - **Author**: lalitaalaalitah
 - **Website**: https://www.lalitaalaalitah.com
 - **GitHub**: https://github.com/lalitaalaalitah
-- **Version**: 1.1.1
+- **Version**: 1.1.2

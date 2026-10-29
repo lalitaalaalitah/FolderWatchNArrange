@@ -35,7 +35,7 @@ class TestFolderWatchNArrange(unittest.TestCase):
 
     def test_version_string(self):
         self.assertTrue(isinstance(__version__, str))
-        self.assertEqual(__version__, "1.1.1")
+        self.assertEqual(__version__, "1.1.2")
 
     def test_copy_action_and_history_dedup(self):
         sample_file = self.src_dir / "PHOTO_001.JPG"
