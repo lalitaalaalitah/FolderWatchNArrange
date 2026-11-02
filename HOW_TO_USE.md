@@ -6,6 +6,9 @@
 
 ## 1. Nix Integration
 
+> [!NOTE]
+> For complete instructions on declaring `FolderWatchNArrange` as a flake input, passing it via `specialArgs`/`extraSpecialArgs`, and configuring the full declarative Home Manager module with rules and mount triggers, see **[NIX_INSTALLATION.md](NIX_INSTALLATION.md)**.
+
 ### Running via Nix Flakes
 ```bash
 # Run latest directly from GitHub
@@ -76,7 +79,7 @@ brew upgrade folder-watch-n-arrange
 | `folder-watch-n-arrange rules` | View currently loaded JSON rules |
 | `folder-watch-n-arrange rules --init` | Reinitialize or create default rules file |
 | `folder-watch-n-arrange test` | Run built-in self-test verification |
-| `folder-watch-n-arrange --version` | Display version (`1.1.2`) |
+| `folder-watch-n-arrange --version` | Display version (`2.0.0`) |
 
 ---
 

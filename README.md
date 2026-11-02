@@ -31,7 +31,7 @@ brew tap lalitaalaalitah/tap
 brew install folder-watch-n-arrange
 ```
 
-### With Nix Flakes
+### With Nix Flakes & Declarative Configuration
 
 Run directly without installing:
 ```bash
@@ -43,6 +43,9 @@ Or build locally:
 nix build
 ./result/bin/folder-watch-n-arrange --version
 ```
+
+> [!TIP]
+> For complete step-by-step instructions on declaring `FolderWatchNArrange` as a flake input in `flake.nix` and managing routing rules, LaunchAgents, and systemd triggers declaratively, see **[NIX_INSTALLATION.md](NIX_INSTALLATION.md)**.
 
 ### With `uv` or Python 3.10+
 
@@ -79,7 +82,9 @@ uv run folder_watch_n_arrange.py --dry-run
 uv run folder_watch_n_arrange.py scan --dry-run
 ```
 
-For full details, rule schema, and Home Manager configuration, see [HOW_TO_USE.md](HOW_TO_USE.md).
+For declarative Nix & Home Manager setups, see [NIX_INSTALLATION.md](NIX_INSTALLATION.md).
+
+For full details, rule schema, and CLI options, see [HOW_TO_USE.md](HOW_TO_USE.md).
 
 For an in-depth architectural comparison against Hazel, Photo Mechanic, Rapid Photo Downloader, and DIY shell scripts, see [COMPARISON.md](COMPARISON.md).
 
