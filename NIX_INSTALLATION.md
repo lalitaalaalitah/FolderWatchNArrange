@@ -228,3 +228,4 @@ which folder-watch-n-arrange
 folder-watch-n-arrange --version
 folder-watch-n-arrange rules
 ```
+
