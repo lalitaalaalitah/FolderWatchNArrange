@@ -35,7 +35,7 @@ class TestFolderWatchNArrange(unittest.TestCase):
 
     def test_version_string(self):
         self.assertTrue(isinstance(__version__, str))
-        self.assertEqual(__version__, "1.1.2")
+        self.assertEqual(__version__, "2.0.0")
 
     def test_copy_action_and_history_dedup(self):
         sample_file = self.src_dir / "PHOTO_001.JPG"
@@ -144,6 +144,35 @@ class TestFolderWatchNArrange(unittest.TestCase):
         now = datetime.datetime.fromtimestamp(past)
         expected_dir = self.dest_dir / f"{now.year:04d}" / f"{now.year:04d}.{now.month:02d}" / f"{now.year:04d}{now.month:02d}{now.day:02d}"
         self.assertTrue((expected_dir / "261029_0001.WAV").is_file())
+
+    def test_post_command_hook(self):
+        sample_audio = self.src_dir / "song.mp3"
+        sample_audio.write_text("audio stream")
+        past = time.time() - 5
+        os.utime(sample_audio, (past, past))
+
+        out_log = self.tmp / "hook_executed.log"
+
+        rules = [
+            {
+                "name": "Hook Test",
+                "sources": [str(self.src_dir)],
+                "extensions": [".mp3"],
+                "action": "copy",
+                "destination": str(self.dest_dir / "Music"),
+                "post_command": f'echo "$FWA_ACTION: {{source}} -> {{destination}}" > "{out_log}"',
+                "on_conflict": "rename",
+            }
+        ]
+
+        engine = ArrangeEngine(config_path=self.cfg_file, history_path=self.hist_file)
+        processed = engine.run_cycle(rules, dry_run=False)
+        self.assertEqual(processed, 1)
+
+        self.assertTrue(out_log.is_file())
+        log_content = out_log.read_text()
+        self.assertIn("copy:", log_content)
+        self.assertIn("song.mp3", log_content)
 
     def test_mount_detection(self):
         mounts = get_current_mounts()

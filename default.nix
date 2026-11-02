@@ -2,7 +2,7 @@
 
 python3Packages.buildPythonApplication {
   pname = "folder-watch-n-arrange";
-  version = "1.1.2";
+  version = "2.0.0";
   pyproject = true;
 
   src = ./.;

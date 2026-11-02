@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-__version__ = "1.1.2"
+__version__ = "2.0.0"
 __author__ = "lalitaalaalitah"
 __website__ = "https://www.lalitaalaalitah.com"
 __github__ = "https://github.com/lalitaalaalitah"
@@ -255,6 +255,46 @@ class ArrangeEngine:
 
         return True
 
+    def format_post_command(self, cmd_template: str | list, src: Path, dest: Path, action: str) -> str | list:
+        src_resolved = src.resolve()
+        dest_resolved = dest.resolve()
+        kwargs = {
+            "source": str(src_resolved),
+            "src": str(src_resolved),
+            "destination": str(dest_resolved),
+            "dest": str(dest_resolved),
+            "source_dir": str(src_resolved.parent),
+            "src_dir": str(src_resolved.parent),
+            "destination_dir": str(dest_resolved.parent),
+            "dest_dir": str(dest_resolved.parent),
+            "action": action,
+            "name": src.name,
+            "stem": src.stem,
+            "ext": src.suffix.lstrip("."),
+        }
+        if isinstance(cmd_template, list):
+            return [str(part).format(**kwargs) for part in cmd_template]
+        return str(cmd_template).format(**kwargs)
+
+    def run_post_command(self, cmd_template: str | list, src: Path, dest: Path, action: str) -> int:
+        cmd = self.format_post_command(cmd_template, src, dest, action)
+        cmd_display = " ".join(cmd) if isinstance(cmd, list) else cmd
+        print(f"[{CLR_BLUE}POST-CMD{CLR_RESET}] {cmd_display}")
+        env = os.environ.copy()
+        env["FWA_SOURCE"] = str(src.resolve())
+        env["FWA_DESTINATION"] = str(dest.resolve())
+        env["FWA_ACTION"] = action
+        env["FWA_SOURCE_DIR"] = str(src.resolve().parent)
+        env["FWA_DEST_DIR"] = str(dest.resolve().parent)
+        try:
+            res = subprocess.run(cmd, shell=isinstance(cmd, str), env=env)
+            if res.returncode != 0:
+                print(f"[{CLR_RED}POST-CMD FAILED{CLR_RESET}] Exit code {res.returncode}")
+            return res.returncode
+        except Exception as e:
+            print(f"[{CLR_RED}POST-CMD ERROR{CLR_RESET}] {e}")
+            return -1
+
     def process_file(self, path: Path, rule: dict, dry_run: bool = False) -> bool:
         try:
             st = path.stat()
@@ -280,6 +320,8 @@ class ArrangeEngine:
         color = CLR_MAUVE if "MOVE" in verb else CLR_GREEN
         print(f"[{color}{verb}{CLR_RESET}] {path} -> {final_dest}")
 
+        post_cmd = rule.get("post_command") or rule.get("on_success")
+
         if not dry_run:
             final_dest.parent.mkdir(parents=True, exist_ok=True)
             if action == "move":
@@ -288,6 +330,14 @@ class ArrangeEngine:
                 shutil.copy2(str(path), str(final_dest))
                 self.history.add(key)
                 self._save_history()
+
+            if post_cmd:
+                self.run_post_command(post_cmd, path, final_dest, action)
+        else:
+            if post_cmd:
+                formatted = self.format_post_command(post_cmd, path, final_dest, action)
+                disp = " ".join(formatted) if isinstance(formatted, list) else formatted
+                print(f"[{CLR_GOLD}WOULD RUN POST-CMD{CLR_RESET}] {disp}")
 
         return True
 
@@ -490,6 +540,27 @@ def self_test():
         count_audio = engine.run_cycle(audio_rules, dry_run=False)
         assert count_audio == 1, f"Expected 1 copied audio file, got {count_audio}"
         assert (dest_dir / "Audio" / "audio.wav").is_file()
+
+        # Test post_command execution
+        hook_marker = tmp / "hook_done.txt"
+        hook_doc = src_dir / "hook_test.txt"
+        hook_doc.write_text("trigger hook")
+        os.utime(hook_doc, (past, past))
+        hook_rules = [
+            {
+                "name": "Test Hook",
+                "sources": [str(src_dir)],
+                "extensions": [".txt"],
+                "action": "copy",
+                "destination": str(dest_dir / "Hooks"),
+                "post_command": f"echo 'source: {{source}} dest: {{destination}}' > '{hook_marker}'",
+                "on_conflict": "rename",
+            }
+        ]
+        count_hook = engine.run_cycle(hook_rules, dry_run=False)
+        assert count_hook == 1, f"Expected 1 copied hook file, got {count_hook}"
+        assert hook_marker.is_file(), "post_command hook did not produce output marker"
+        assert "hook_test.txt" in hook_marker.read_text()
 
         mounts = get_current_mounts()
         assert isinstance(mounts, set)

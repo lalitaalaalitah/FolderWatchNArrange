@@ -145,6 +145,7 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
     ],
     "action": "copy",
     "destination": "/Volumes/Cablet_WD_2TB_20251206/Music/x8/SOUND/{year}/{year}.{month}/{year}{month}{day}",
+    "post_command": "duplicate_finder -s '{source}' -d '{destination}'",
     "on_conflict": "rename"
   },
   {
@@ -169,6 +170,33 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
 - `{stem}`: Filename without extension (`IMG_0001`)
 - `{name}`: Complete filename (`IMG_0001.JPG`)
 
+### Post-Transfer Hooks (`post_command` / `on_success`)
+
+Any rule can define a `post_command` shell string or argument array that executes immediately after each file has been successfully copied or moved.
+
+Available command variables:
+- `{source}` / `{src}`: Full absolute path to source file
+- `{destination}` / `{dest}`: Full absolute path to destination file
+- `{source_dir}` / `{src_dir}`: Directory containing source file
+- `{destination_dir}` / `{dest_dir}`: Directory containing destination file
+- `{action}`: Transfer action (`copy` or `move`)
+- `{name}`, `{stem}`, `{ext}`: File name components
+
+Exported environment variables:
+- `FWA_SOURCE`: Absolute path to source file
+- `FWA_DESTINATION`: Absolute path to destination file
+- `FWA_ACTION`: `copy` or `move`
+- `FWA_SOURCE_DIR`: Source directory path
+- `FWA_DEST_DIR`: Destination directory path
+
+Examples:
+```json
+"post_command": "duplicate_finder -s '{source}' -d '{destination}'"
+```
+```json
+"post_command": "music-tagger --file '{destination}'"
+```
+
 For an in-depth architectural and feature comparison against commercial and open-source tools, see [COMPARISON.md](COMPARISON.md).
 
 ---
@@ -178,4 +206,4 @@ For an in-depth architectural and feature comparison against commercial and open
 - **Author**: lalitaalaalitah
 - **Website**: https://www.lalitaalaalitah.com
 - **GitHub**: https://github.com/lalitaalaalitah
-- **Version**: 1.1.2
+- **Version**: 2.0.0

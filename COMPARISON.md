@@ -22,6 +22,7 @@
 | **Incomplete Write Protection** | ✅ **Built-in Settle Checks** | Basic | Advanced Checksums | ✅ Built-in | ❌ Hard to script correctly |
 | **Deduplication Tracking** | ✅ **Built-in History State** | Custom Rules | Session-based | ✅ Database | ❌ Requires custom db/hashes |
 | **Mount Auto-Kickoff** | ✅ **Native (`launchd` / `systemd`)** | Polling / Folder | Manual Card Insertion | Polling / DBus | `udev` (Linux only) |
+| **Post-Transfer Script Hooks** | ✅ **Built-in (`post_command`)** | ✅ AppleScript / Shell | Basic / Paid Plugins | Basic external script | ❌ Manual plumbing |
 
 ---
 
@@ -44,6 +45,8 @@
   Most open-source watchers keep a background process running indefinitely, polling the disk and consuming system RAM. `FolderWatchNArrange` pairs with native OS triggers (`LaunchAgent` with `WatchPaths` on macOS, `systemd.path` on Linux), meaning **it consumes 0 MB of RAM when idle** and only spawns when storage is actually mounted.
 * **DIY `udev` Rules & Bash Scripts:**  
   Linux power users often glue together `/etc/udev/rules.d/` and `rsync` scripts. While lightweight, these scripts are notoriously brittle, difficult to write with user-space permissions, lack cross-platform compatibility with macOS `/Volumes`, and often corrupt files by copying before the OS has finished mounting or the camera/recorder has finished flushing its cache. `FolderWatchNArrange` handles cross-platform mount detection, debouncing, deduplication history, and file-settle checks safely out of the box.
+* **Custom Post-Processing & Deduplication Integration:**  
+  While simple shell scripts require manual loops and status tracking, `FolderWatchNArrange` allows embedding `post_command` execution per rule. As soon as a file is safely transferred, it seamlessly invokes downstream tools—such as passing `{source}` and `{destination}` into deduplication engines (`duplicate_finder`), audio converters, or media taggers—with full dry-run preview support.
 
 ---
 
