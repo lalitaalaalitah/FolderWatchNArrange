@@ -46,7 +46,24 @@ Add FolderWatchNArrange to your Home Manager flake:
 
 ---
 
-## 2. CLI Commands Overview
+## 2. Homebrew Tap Installation (macOS & Linux)
+
+To install or update via Homebrew using the official tap:
+
+```bash
+# Add tap (if not already added)
+brew tap lalitaalaalitah/tap
+
+# Install folder-watch-n-arrange
+brew install folder-watch-n-arrange
+
+# Update to latest version
+brew upgrade folder-watch-n-arrange
+```
+
+---
+
+## 3. CLI Commands Overview
 
 | Command | Description |
 |---|---|
@@ -59,11 +76,11 @@ Add FolderWatchNArrange to your Home Manager flake:
 | `folder-watch-n-arrange rules` | View currently loaded JSON rules |
 | `folder-watch-n-arrange rules --init` | Reinitialize or create default rules file |
 | `folder-watch-n-arrange test` | Run built-in self-test verification |
-| `folder-watch-n-arrange --version` | Display version (`1.1.0`) |
+| `folder-watch-n-arrange --version` | Display version (`1.1.2`) |
 
 ---
 
-## 3. Storage Mount Kickoff Mechanisms
+## 4. Storage Mount Kickoff Mechanisms
 
 FolderWatchNArrange supports two kickoff models:
 
@@ -83,7 +100,7 @@ Diffs active mounts and executes a scan the moment a new storage partition appea
 
 ---
 
-## 4. Configuration & Rule Schema
+## 5. Configuration & Rule Schema
 
 Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
 
@@ -156,7 +173,7 @@ For an in-depth architectural and feature comparison against commercial and open
 
 ---
 
-## 5. Author & Metadata
+## 6. Author & Metadata
 
 - **Author**: lalitaalaalitah
 - **Website**: https://www.lalitaalaalitah.com

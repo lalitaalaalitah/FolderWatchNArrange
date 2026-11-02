@@ -23,6 +23,13 @@
 
 ## Installation & Execution
 
+### With Homebrew (macOS & Linux)
+
+```bash
+brew tap lalitaalaalitah/tap
+brew install folder-watch-n-arrange
+```
+
 ### With Nix Flakes
 
 Run directly without installing:
