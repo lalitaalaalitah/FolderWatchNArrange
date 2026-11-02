@@ -73,6 +73,8 @@ uv run folder_watch_n_arrange.py scan --dry-run
 
 For full details, rule schema, and Home Manager configuration, see [HOW_TO_USE.md](HOW_TO_USE.md).
 
+For an in-depth architectural comparison against Hazel, Photo Mechanic, Rapid Photo Downloader, and DIY shell scripts, see [COMPARISON.md](COMPARISON.md).
+
 ---
 
 ## Author & Metadata

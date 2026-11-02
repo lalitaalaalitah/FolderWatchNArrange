@@ -152,6 +152,8 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
 - `{stem}`: Filename without extension (`IMG_0001`)
 - `{name}`: Complete filename (`IMG_0001.JPG`)
 
+For an in-depth architectural and feature comparison against commercial and open-source tools, see [COMPARISON.md](COMPARISON.md).
+
 ---
 
 ## 5. Author & Metadata
