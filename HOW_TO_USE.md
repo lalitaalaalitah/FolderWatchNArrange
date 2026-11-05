@@ -148,7 +148,7 @@ Rules reside at `~/.config/folder_watch_n_arrange/rules.json`:
     ],
     "action": "copy",
     "destination": "/Volumes/Cablet_WD_2TB_20251206/Music/x8/SOUND/{year}/{year}.{month}/{year}{month}{day}",
-    "post_command": "duplicate_finder -s '{source}' -d '{destination}'",
+    "post_command": "duplicate-finder -sod -pd -autodel -ftsa sn -db y -at y -cs n -r '{destination_dir}' -o '{source_dir}'",
     "on_conflict": "rename"
   },
   {
@@ -194,7 +194,7 @@ Exported environment variables:
 
 Examples:
 ```json
-"post_command": "duplicate_finder -s '{source}' -d '{destination}'"
+"post_command": "duplicate-finder -sod -pd -autodel -ftsa sn -db y -at y -cs n -r '{destination_dir}' -o '{source_dir}'"
 ```
 ```json
 "post_command": "music-tagger --file '{destination}'"
